@@ -4,6 +4,9 @@ import hu.bme.mit.gamma.statechart.language.StatechartLanguageStandaloneSetup
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl
 import org.eclipse.emf.common.util.URI
 import hu.bme.mit.gamma.statechart.interface_.InterfaceModelPackage
+import org.eclipse.emf.ecore.EObject
+import hu.bme.mit.gamma.statechart.interface_.Package
+import hu.bme.mit.gamma.statechart.statechart.SynchronousStatechartDefinition
 
 class Main {
 	def static void main(String[] args) {
@@ -19,19 +22,58 @@ class Main {
             //URI.createFileURI("D:/git/gamma/tutorial/hu.bme.mit.gamma.tutorial.finish/model/Crossroad.gcd"),
             true
         )
-        println("Loaded resource: " + resource.URI)
-        println("Root objects: " + resource.contents.size)
+		
+		if (resource.contents.size>1) println("Only one root is supported.")
+		
+		val root=resource.contents.first
+		if (root instanceof Package) {
+			val pname=root.name;
+			
+			if (root.components.size!=1) println("Only one component (Statechart) is supported")
+			val statechart=root.components.first
+			if (statechart instanceof SynchronousStatechartDefinition) {
+				val code=createModelicaCode(statechart,pname)
+				print(code)
+				println(statechart.annotations)
+				println(statechart.functionDeclarations)
+				println(statechart.guardEvaluation)//on the fly?
+				println(statechart.invariants)
+				println(statechart.orthogonalRegionSchedulingOrder)//sequential?
+				println(statechart.parameterDeclarations)
+				println(statechart.ports)//ports!!!!!!!!!
+				println(statechart.regions)//region
+				println(statechart.schedulingOrder)//top down
+				println(statechart.timeoutDeclarations)//timeouts!!!
+				println(statechart.transitionPriority)//OFF
+				println(statechart.transitions)//trans
+				println(statechart.variableDeclarations)//
+			} else println("Only synchronous statecharts are supported")
+			
+			
+		} else println("Unexpected root. Expected type: Package")
+		
+		printTree(root,"")
+	}
+	
+	def static createModelicaCode(SynchronousStatechartDefinition model, String packageName)'''
+package «packageName»
 
-        /*for (root : resource.contents) {
-            println("Root type: " + root.eClass.name)
-        }*/
-        for (root : resource.contents) {
-		    println("Root type: " + root.eClass.name)
-		
-		    for (child : root.eContents) {
-		        println("  " + child.eClass.name)
-		    }
-		}
-		
+class «model.name»
+import Modelica.StateGraph.InitialStep;
+import Modelica.StateGraph.Step;
+import Modelica.StateGraph.Transition;
+
+end «model.name»;
+
+end «packageName»;
+'''
+	
+	def static void printTree(EObject object, String indent) {
+		println(indent+object.eClass.name)
+	    
+	    for (child : object.eContents) {
+	        printTree(child, indent + "  ")
+	    }
 	}
 }
+
