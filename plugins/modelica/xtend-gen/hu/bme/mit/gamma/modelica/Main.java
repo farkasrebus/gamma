@@ -1,29 +1,34 @@
 package hu.bme.mit.gamma.modelica;
 
-import hu.bme.mit.gamma.expression.model.Expression;
-import hu.bme.mit.gamma.expression.model.FunctionDeclaration;
-import hu.bme.mit.gamma.expression.model.ParameterDeclaration;
-import hu.bme.mit.gamma.expression.model.VariableDeclaration;
 import hu.bme.mit.gamma.statechart.interface_.Component;
-import hu.bme.mit.gamma.statechart.interface_.ComponentAnnotation;
+import hu.bme.mit.gamma.statechart.interface_.Event;
+import hu.bme.mit.gamma.statechart.interface_.EventReference;
+import hu.bme.mit.gamma.statechart.interface_.EventTrigger;
+import hu.bme.mit.gamma.statechart.interface_.Interface;
 import hu.bme.mit.gamma.statechart.interface_.InterfaceModelPackage;
+import hu.bme.mit.gamma.statechart.interface_.InterfaceRealization;
 import hu.bme.mit.gamma.statechart.interface_.Port;
+import hu.bme.mit.gamma.statechart.interface_.RealizationMode;
+import hu.bme.mit.gamma.statechart.interface_.Trigger;
 import hu.bme.mit.gamma.statechart.language.StatechartLanguageStandaloneSetup;
-import hu.bme.mit.gamma.statechart.statechart.GuardEvaluation;
-import hu.bme.mit.gamma.statechart.statechart.OrthogonalRegionSchedulingOrder;
-import hu.bme.mit.gamma.statechart.statechart.Region;
-import hu.bme.mit.gamma.statechart.statechart.SchedulingOrder;
+import hu.bme.mit.gamma.statechart.statechart.PortEventReference;
+import hu.bme.mit.gamma.statechart.statechart.StatechartModelPackage;
 import hu.bme.mit.gamma.statechart.statechart.SynchronousStatechartDefinition;
-import hu.bme.mit.gamma.statechart.statechart.TimeoutDeclaration;
 import hu.bme.mit.gamma.statechart.statechart.Transition;
-import hu.bme.mit.gamma.statechart.statechart.TransitionPriority;
+import java.util.List;
+import java.util.Objects;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.InternalEObject;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
+import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.xtend2.lib.StringConcatenation;
+import org.eclipse.xtext.nodemodel.INode;
+import org.eclipse.xtext.nodemodel.util.NodeModelUtils;
 import org.eclipse.xtext.xbase.lib.InputOutput;
+import org.eclipse.xtext.xbase.lib.StringExtensions;
 
 @SuppressWarnings("all")
 public class Main {
@@ -34,6 +39,7 @@ public class Main {
     final Resource resource = resourceSet.getResource(
       URI.createFileURI("D:/git/gamma/tutorial/hu.bme.mit.gamma.tutorial.finish/model/TrafficLight/TrafficLightCtrl.gcd"), 
       true);
+    EcoreUtil.resolveAll(resourceSet);
     int _size = resource.getContents().size();
     boolean _greaterThan = (_size > 1);
     if (_greaterThan) {
@@ -51,19 +57,38 @@ public class Main {
       if ((statechart instanceof SynchronousStatechartDefinition)) {
         final CharSequence code = Main.createModelicaCode(((SynchronousStatechartDefinition)statechart), pname);
         InputOutput.<CharSequence>print(code);
-        InputOutput.<EList<ComponentAnnotation>>println(((SynchronousStatechartDefinition)statechart).getAnnotations());
-        InputOutput.<EList<FunctionDeclaration>>println(((SynchronousStatechartDefinition)statechart).getFunctionDeclarations());
-        InputOutput.<GuardEvaluation>println(((SynchronousStatechartDefinition)statechart).getGuardEvaluation());
-        InputOutput.<EList<Expression>>println(((SynchronousStatechartDefinition)statechart).getInvariants());
-        InputOutput.<OrthogonalRegionSchedulingOrder>println(((SynchronousStatechartDefinition)statechart).getOrthogonalRegionSchedulingOrder());
-        InputOutput.<EList<ParameterDeclaration>>println(((SynchronousStatechartDefinition)statechart).getParameterDeclarations());
-        InputOutput.<EList<Port>>println(((SynchronousStatechartDefinition)statechart).getPorts());
-        InputOutput.<EList<Region>>println(((SynchronousStatechartDefinition)statechart).getRegions());
-        InputOutput.<SchedulingOrder>println(((SynchronousStatechartDefinition)statechart).getSchedulingOrder());
-        InputOutput.<EList<TimeoutDeclaration>>println(((SynchronousStatechartDefinition)statechart).getTimeoutDeclarations());
-        InputOutput.<TransitionPriority>println(((SynchronousStatechartDefinition)statechart).getTransitionPriority());
-        InputOutput.<EList<Transition>>println(((SynchronousStatechartDefinition)statechart).getTransitions());
-        InputOutput.<EList<VariableDeclaration>>println(((SynchronousStatechartDefinition)statechart).getVariableDeclarations());
+        EList<Port> _ports = ((SynchronousStatechartDefinition)statechart).getPorts();
+        for (final Port port : _ports) {
+          {
+            final InterfaceRealization realization = port.getInterfaceRealization();
+            final Interface gammaInterface = realization.getInterface();
+            InputOutput.<Boolean>println(Boolean.valueOf(gammaInterface.eIsProxy()));
+            InputOutput.<String>println(gammaInterface.getName());
+            final InternalEObject internalInterface = ((InternalEObject) gammaInterface);
+            InputOutput.<Boolean>println(Boolean.valueOf(internalInterface.eIsProxy()));
+            InputOutput.<URI>println(internalInterface.eProxyURI());
+          }
+        }
+        EList<Transition> _transitions = ((SynchronousStatechartDefinition)statechart).getTransitions();
+        for (final Transition tran : _transitions) {
+          {
+            final Trigger trig = tran.getTrigger();
+            if ((trig instanceof EventTrigger)) {
+              final EventReference er = ((EventTrigger)trig).getEventReference();
+              if ((er instanceof PortEventReference)) {
+                final List<INode> node = NodeModelUtils.findNodesForFeature(er, StatechartModelPackage.Literals.PORT_EVENT_REFERENCE__EVENT);
+                String _tokenText = NodeModelUtils.getTokenText(node.getFirst());
+                String _plus = ("..........." + _tokenText);
+                InputOutput.<String>println(_plus);
+                String _name = ((PortEventReference)er).getPort().getName();
+                String _plus_1 = (_name + ".");
+                Event _event = ((PortEventReference)er).getEvent();
+                String _plus_2 = (_plus_1 + _event);
+                InputOutput.<String>println(_plus_2);
+              }
+            }
+          }
+        }
       } else {
         InputOutput.<String>println("Only synchronous statecharts are supported");
       }
@@ -71,6 +96,11 @@ public class Main {
       InputOutput.<String>println("Unexpected root. Expected type: Package");
     }
     Main.printTree(root, "");
+  }
+
+  public static boolean isRequired(final Port p) {
+    RealizationMode _realizationMode = p.getInterfaceRealization().getRealizationMode();
+    return Objects.equals(_realizationMode, RealizationMode.REQUIRED);
   }
 
   public static CharSequence createModelicaCode(final SynchronousStatechartDefinition model, final String packageName) {
@@ -88,6 +118,29 @@ public class Main {
     _builder.append("import Modelica.StateGraph.Step;");
     _builder.newLine();
     _builder.append("import Modelica.StateGraph.Transition;");
+    _builder.newLine();
+    _builder.newLine();
+    _builder.newLine();
+    {
+      EList<Port> _ports = model.getPorts();
+      for(final Port port : _ports) {
+        _builder.append("Modelica.Blocks.Interfaces.");
+        {
+          boolean _isRequired = Main.isRequired(port);
+          if (_isRequired) {
+            _builder.append("BooleanInput");
+          } else {
+            _builder.append("BooleanOutput");
+          }
+        }
+        _builder.append(" ");
+        String _firstLower = StringExtensions.toFirstLower(port.getName());
+        _builder.append(_firstLower);
+        _builder.append(";");
+        _builder.newLineIfNotEmpty();
+      }
+    }
+    _builder.newLine();
     _builder.newLine();
     _builder.newLine();
     _builder.append("end ");
