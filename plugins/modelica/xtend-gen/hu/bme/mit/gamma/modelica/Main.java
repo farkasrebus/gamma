@@ -1,26 +1,29 @@
 package hu.bme.mit.gamma.modelica;
 
+import hu.bme.mit.gamma.action.model.Action;
 import hu.bme.mit.gamma.statechart.interface_.Component;
-import hu.bme.mit.gamma.statechart.interface_.Event;
 import hu.bme.mit.gamma.statechart.interface_.EventReference;
 import hu.bme.mit.gamma.statechart.interface_.EventTrigger;
-import hu.bme.mit.gamma.statechart.interface_.Interface;
 import hu.bme.mit.gamma.statechart.interface_.InterfaceModelPackage;
-import hu.bme.mit.gamma.statechart.interface_.InterfaceRealization;
 import hu.bme.mit.gamma.statechart.interface_.Port;
 import hu.bme.mit.gamma.statechart.interface_.RealizationMode;
 import hu.bme.mit.gamma.statechart.interface_.Trigger;
 import hu.bme.mit.gamma.statechart.language.StatechartLanguageStandaloneSetup;
 import hu.bme.mit.gamma.statechart.statechart.PortEventReference;
+import hu.bme.mit.gamma.statechart.statechart.RaiseEventAction;
+import hu.bme.mit.gamma.statechart.statechart.Region;
+import hu.bme.mit.gamma.statechart.statechart.State;
+import hu.bme.mit.gamma.statechart.statechart.StateNode;
 import hu.bme.mit.gamma.statechart.statechart.StatechartModelPackage;
 import hu.bme.mit.gamma.statechart.statechart.SynchronousStatechartDefinition;
 import hu.bme.mit.gamma.statechart.statechart.Transition;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
-import org.eclipse.emf.ecore.InternalEObject;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.eclipse.emf.ecore.util.EcoreUtil;
@@ -57,36 +60,12 @@ public class Main {
       if ((statechart instanceof SynchronousStatechartDefinition)) {
         final CharSequence code = Main.createModelicaCode(((SynchronousStatechartDefinition)statechart), pname);
         InputOutput.<CharSequence>print(code);
-        EList<Port> _ports = ((SynchronousStatechartDefinition)statechart).getPorts();
-        for (final Port port : _ports) {
+        EList<Region> _regions = ((SynchronousStatechartDefinition)statechart).getRegions();
+        for (final Region r : _regions) {
           {
-            final InterfaceRealization realization = port.getInterfaceRealization();
-            final Interface gammaInterface = realization.getInterface();
-            InputOutput.<Boolean>println(Boolean.valueOf(gammaInterface.eIsProxy()));
-            InputOutput.<String>println(gammaInterface.getName());
-            final InternalEObject internalInterface = ((InternalEObject) gammaInterface);
-            InputOutput.<Boolean>println(Boolean.valueOf(internalInterface.eIsProxy()));
-            InputOutput.<URI>println(internalInterface.eProxyURI());
-          }
-        }
-        EList<Transition> _transitions = ((SynchronousStatechartDefinition)statechart).getTransitions();
-        for (final Transition tran : _transitions) {
-          {
-            final Trigger trig = tran.getTrigger();
-            if ((trig instanceof EventTrigger)) {
-              final EventReference er = ((EventTrigger)trig).getEventReference();
-              if ((er instanceof PortEventReference)) {
-                final List<INode> node = NodeModelUtils.findNodesForFeature(er, StatechartModelPackage.Literals.PORT_EVENT_REFERENCE__EVENT);
-                String _tokenText = NodeModelUtils.getTokenText(node.getFirst());
-                String _plus = ("..........." + _tokenText);
-                InputOutput.<String>println(_plus);
-                String _name = ((PortEventReference)er).getPort().getName();
-                String _plus_1 = (_name + ".");
-                Event _event = ((PortEventReference)er).getEvent();
-                String _plus_2 = (_plus_1 + _event);
-                InputOutput.<String>println(_plus_2);
-              }
-            }
+            final HashSet<String> raisedEvents = new HashSet<String>();
+            Main.getEntryEvents(r, raisedEvents);
+            InputOutput.<HashSet<String>>print(raisedEvents);
           }
         }
       } else {
@@ -98,9 +77,57 @@ public class Main {
     Main.printTree(root, "");
   }
 
+  public static void getEntryEvents(final Region r, final Set<String> result) {
+    EList<StateNode> _stateNodes = r.getStateNodes();
+    for (final StateNode sn : _stateNodes) {
+      {
+        InputOutput.<StateNode>println(sn);
+        if ((sn instanceof State)) {
+          EList<Action> _entryActions = ((State)sn).getEntryActions();
+          for (final Action a : _entryActions) {
+            if ((a instanceof RaiseEventAction)) {
+              final List<INode> node = NodeModelUtils.findNodesForFeature(a, StatechartModelPackage.Literals.RAISE_EVENT_ACTION__EVENT);
+              String _name = ((RaiseEventAction)a).getPort().getName();
+              String _plus = (_name + "_");
+              String _tokenText = NodeModelUtils.getTokenText(node.getFirst());
+              String _plus_1 = (_plus + _tokenText);
+              result.add(_plus_1);
+            }
+          }
+          EList<Region> _regions = ((State)sn).getRegions();
+          for (final Region ir : _regions) {
+            Main.getEntryEvents(ir, result);
+          }
+        }
+      }
+    }
+  }
+
+  public static Object collectEvent(final Action a, final Set<String> result) {
+    return null;
+  }
+
   public static boolean isRequired(final Port p) {
     RealizationMode _realizationMode = p.getInterfaceRealization().getRealizationMode();
     return Objects.equals(_realizationMode, RealizationMode.REQUIRED);
+  }
+
+  public static HashSet<String> getTriggerEvents(final SynchronousStatechartDefinition sct) {
+    final HashSet<String> result = new HashSet<String>();
+    EList<Transition> _transitions = sct.getTransitions();
+    for (final Transition tran : _transitions) {
+      {
+        final Trigger trig = tran.getTrigger();
+        if ((trig instanceof EventTrigger)) {
+          final EventReference er = ((EventTrigger)trig).getEventReference();
+          if ((er instanceof PortEventReference)) {
+            final List<INode> node = NodeModelUtils.findNodesForFeature(er, StatechartModelPackage.Literals.PORT_EVENT_REFERENCE__EVENT);
+            result.add(NodeModelUtils.getTokenText(node.getFirst()));
+          }
+        }
+      }
+    }
+    return result;
   }
 
   public static CharSequence createModelicaCode(final SynchronousStatechartDefinition model, final String packageName) {

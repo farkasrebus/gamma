@@ -15,6 +15,13 @@ import org.eclipse.emf.ecore.InternalEObject
 import org.eclipse.emf.ecore.util.EcoreUtil
 import org.eclipse.xtext.nodemodel.util.NodeModelUtils
 import hu.bme.mit.gamma.statechart.statechart.StatechartModelPackage
+import java.util.HashSet
+import hu.bme.mit.gamma.statechart.statechart.Region
+import hu.bme.mit.gamma.statechart.statechart.StateNode
+import java.util.Set
+import hu.bme.mit.gamma.statechart.statechart.State
+import hu.bme.mit.gamma.action.model.Action
+import hu.bme.mit.gamma.statechart.statechart.RaiseEventAction
 
 class Main {
 	def static void main(String[] args) {
@@ -50,31 +57,15 @@ class Main {
 				println(statechart.orthogonalRegionSchedulingOrder)//sequential?
 				println(statechart.parameterDeclarations)*/
 				//println(statechart.ports)//ports!!!!!!!!!
-				for (Port port : statechart.ports) {
-					val realization = port.interfaceRealization
-				    val gammaInterface = realization.interface
-				    
-				    println(gammaInterface.eIsProxy)
-					println(gammaInterface.name)
-				    val internalInterface = gammaInterface as InternalEObject
-
-					println(internalInterface.eIsProxy)
-					println(internalInterface.eProxyURI)
-				}
-				for (tran: statechart.transitions) {
-					val trig=tran.trigger
-					if (trig instanceof EventTrigger) {
-						val er=trig.eventReference
-						if (er instanceof PortEventReference){
-							val node=NodeModelUtils.findNodesForFeature(er, StatechartModelPackage.Literals.PORT_EVENT_REFERENCE__EVENT)
-							println("..........."+NodeModelUtils.getTokenText(node.first))
-							println(er.port.name+"."+er.event)
-						}
-					}
+				
+				for (Region r:statechart.regions) {
+					val raisedEvents=new HashSet()
+					getEntryEvents(r,raisedEvents)
+					print(raisedEvents)
 				}
 				
-				/*println(statechart.regions)//region
-				println(statechart.schedulingOrder)//top down
+				//println(statechart.regions)//region
+				/*println(statechart.schedulingOrder)//top down
 				println(statechart.timeoutDeclarations)//timeouts!!!
 				println(statechart.transitionPriority)//OFF
 				println(statechart.transitions)//trans
@@ -87,10 +78,50 @@ class Main {
 		printTree(root,"")
 	}
 	
+	def static getEntryEvents(Region r,Set<String> result) {
+		for (StateNode sn: r.stateNodes) {
+			println(sn)
+			if (sn instanceof State) {
+				for (Action a:sn.entryActions) {
+					if (a instanceof RaiseEventAction) {
+						val node=NodeModelUtils.findNodesForFeature(a, StatechartModelPackage.Literals.RAISE_EVENT_ACTION__EVENT)
+						result.add(a.port.name+"_"+NodeModelUtils.getTokenText(node.first))
+					}
+				}
+				for (Region ir: sn.regions) {
+					getEntryEvents(ir,result)
+				}
+			}
+		}
+	}
+	
+	def static collectEvent(Action a, Set<String> result) {
+		
+	}
+	
 	def static isRequired(Port p) {
 		return p.interfaceRealization.realizationMode == RealizationMode.REQUIRED;
 	}
 	
+	//input events
+	def static getTriggerEvents(SynchronousStatechartDefinition sct) {
+		val result=new HashSet<String>();
+		for (tran: sct.transitions) {
+			val trig=tran.trigger
+			if (trig instanceof EventTrigger) {
+				val er=trig.eventReference
+				if (er instanceof PortEventReference){
+					/*
+					 * Gamma interface references are unresolved in the standalone ResourceSet.
+					 * The token is retrieved directly from the parsed syntax tree.
+					 */
+					val node=NodeModelUtils.findNodesForFeature(er, StatechartModelPackage.Literals.PORT_EVENT_REFERENCE__EVENT)
+					result.add(NodeModelUtils.getTokenText(node.first))
+				}
+			}
+		}
+		return result;
+	}
 	
 	def static createModelicaCode(SynchronousStatechartDefinition model, String packageName)'''
 package «packageName»
