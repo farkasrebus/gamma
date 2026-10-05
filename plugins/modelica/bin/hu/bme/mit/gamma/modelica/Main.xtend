@@ -48,7 +48,8 @@ class Main {
 			if (root.components.size!=1) println("Only one component (Statechart) is supported")
 			val statechart=root.components.first
 			if (statechart instanceof SynchronousStatechartDefinition) {
-				val code=createModelicaCode(statechart,pname)
+				val model=new StatechartModel(statechart)
+				val code=model.createModelicaCode(pname)
 				print(code)
 				/*println(statechart.annotations)
 				println(statechart.functionDeclarations)
@@ -58,11 +59,7 @@ class Main {
 				println(statechart.parameterDeclarations)*/
 				//println(statechart.ports)//ports!!!!!!!!!
 				
-				for (Region r:statechart.regions) {
-					val raisedEvents=new HashSet()
-					getEntryEvents(r,raisedEvents)
-					print(raisedEvents)
-				}
+				
 				
 				//println(statechart.regions)//region
 				/*println(statechart.schedulingOrder)//top down
@@ -78,23 +75,6 @@ class Main {
 		printTree(root,"")
 	}
 	
-	def static getEntryEvents(Region r,Set<String> result) {
-		for (StateNode sn: r.stateNodes) {
-			println(sn)
-			if (sn instanceof State) {
-				for (Action a:sn.entryActions) {
-					if (a instanceof RaiseEventAction) {
-						val node=NodeModelUtils.findNodesForFeature(a, StatechartModelPackage.Literals.RAISE_EVENT_ACTION__EVENT)
-						result.add(a.port.name+"_"+NodeModelUtils.getTokenText(node.first))
-					}
-				}
-				for (Region ir: sn.regions) {
-					getEntryEvents(ir,result)
-				}
-			}
-		}
-	}
-	
 	def static collectEvent(Action a, Set<String> result) {
 		
 	}
@@ -103,46 +83,7 @@ class Main {
 		return p.interfaceRealization.realizationMode == RealizationMode.REQUIRED;
 	}
 	
-	//input events
-	def static getTriggerEvents(SynchronousStatechartDefinition sct) {
-		val result=new HashSet<String>();
-		for (tran: sct.transitions) {
-			val trig=tran.trigger
-			if (trig instanceof EventTrigger) {
-				val er=trig.eventReference
-				if (er instanceof PortEventReference){
-					/*
-					 * Gamma interface references are unresolved in the standalone ResourceSet.
-					 * The token is retrieved directly from the parsed syntax tree.
-					 */
-					val node=NodeModelUtils.findNodesForFeature(er, StatechartModelPackage.Literals.PORT_EVENT_REFERENCE__EVENT)
-					result.add(NodeModelUtils.getTokenText(node.first))
-				}
-			}
-		}
-		return result;
-	}
-	
-	def static createModelicaCode(SynchronousStatechartDefinition model, String packageName)'''
-package «packageName»
 
-class «model.name»
-import Modelica.StateGraph.InitialStep;
-import Modelica.StateGraph.Step;
-import Modelica.StateGraph.Transition;
-
-«/*TODO:redo this part */»
-«FOR port : model.ports»
-	Modelica.Blocks.Interfaces.«IF port.isRequired»BooleanInput«ELSE»BooleanOutput«ENDIF» «port.name.toFirstLower»;
-«ENDFOR»
-
-
-
-end «model.name»;
-
-end «packageName»;
-'''
-	
 	def static void printTree(EObject object, String indent) {
 		println(indent+object.eClass.name)
 	    
