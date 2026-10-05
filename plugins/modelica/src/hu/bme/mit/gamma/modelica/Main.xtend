@@ -75,13 +75,9 @@ class Main {
 		printTree(root,"")
 	}
 	
-	def static collectEvent(Action a, Set<String> result) {
-		
-	}
-	
-	def static isRequired(Port p) {
+	/*def static isRequired(Port p) {
 		return p.interfaceRealization.realizationMode == RealizationMode.REQUIRED;
-	}
+	}*/
 	
 
 	def static void printTree(EObject object, String indent) {

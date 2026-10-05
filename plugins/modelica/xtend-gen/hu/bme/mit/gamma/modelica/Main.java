@@ -1,14 +1,9 @@
 package hu.bme.mit.gamma.modelica;
 
-import hu.bme.mit.gamma.action.model.Action;
 import hu.bme.mit.gamma.statechart.interface_.Component;
 import hu.bme.mit.gamma.statechart.interface_.InterfaceModelPackage;
-import hu.bme.mit.gamma.statechart.interface_.Port;
-import hu.bme.mit.gamma.statechart.interface_.RealizationMode;
 import hu.bme.mit.gamma.statechart.language.StatechartLanguageStandaloneSetup;
 import hu.bme.mit.gamma.statechart.statechart.SynchronousStatechartDefinition;
-import java.util.Objects;
-import java.util.Set;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
@@ -54,15 +49,11 @@ public class Main {
     Main.printTree(root, "");
   }
 
-  public static Object collectEvent(final Action a, final Set<String> result) {
-    return null;
-  }
-
-  public static boolean isRequired(final Port p) {
-    RealizationMode _realizationMode = p.getInterfaceRealization().getRealizationMode();
-    return Objects.equals(_realizationMode, RealizationMode.REQUIRED);
-  }
-
+  /**
+   * def static isRequired(Port p) {
+   * return p.interfaceRealization.realizationMode == RealizationMode.REQUIRED;
+   * }
+   */
   public static void printTree(final EObject object, final String indent) {
     String _name = object.eClass().getName();
     String _plus = (indent + _name);
