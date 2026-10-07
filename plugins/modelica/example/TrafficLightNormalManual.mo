@@ -23,7 +23,7 @@ class TrafficLightNormalManual
   connect(yellow.outPort[1],t3.inPort);
   connect(t3.outPort,red.inPort[2]);
   
-  when t1.fire then
+  when green.active and not pre(green.active) then
     displayGreen=true;
   elsewhen pre(displayGreen) then
     displayGreen = false;

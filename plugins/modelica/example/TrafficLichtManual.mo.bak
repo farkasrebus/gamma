@@ -3,10 +3,8 @@ import Modelica.StateGraph.InitialStep;
 import Modelica.StateGraph.Step;
 import Modelica.StateGraph.Transition;
 
-Modelica.Blocks.Interfaces.BooleanInput controlToggle;
+Modelica.Blocks.Interfaces.BooleanOutput controlToggle;
 Modelica.Blocks.Interfaces.BooleanOutput greenLamp;
-Modelica.Blocks.Interfaces.BooleanOutput displayGreen;
-Boolean greenInternal=false;
 
  InitialStep initialStep(nIn=0, nOut=1);//Just a pseudostate,representing an entry state
  TrafficLightNormalManual normal;
@@ -15,6 +13,8 @@ Boolean greenInternal=false;
  
  Transition t1(enableTimer=true, waitTime=0);//Wait time 0, because the initialstep is just a transient state
  Transition t2(enableTimer=true, waitTime=0);//Wait time 0, because preNormal is also just a transient state
+ 
+ 
  Transition t3(enableTimer=true, waitTime=2);//Leaving enough time for the internal steps to become active
  Transition t4(enableTimer=true, waitTime=1);
  
@@ -31,17 +31,19 @@ equation
   connect(t3.outPort,interrupted.inPort);
   connect(interrupted.suspend[1],t4.inPort);
   connect(t4.outPort,preNormal.inPort[2]);
-  connect(controlToggle,normal.toggle);
-  //connect(controlToggle,interrupted.toggle);
   
+  when time == 1.0 then
+    controlToggle=true;
+  elsewhen pre(controlToggle) then
+    controlToggle = false;
+  end when;
   
   when edge(normal.displayGreen) then
     greenLamp = true;
   end when;
-  
-  displayGreen=greenInternal or normal.displayGreen or interrupted.displayGreen;
  
 
+  normal.toggle=controlToggle;
   
 annotation(
     experiment(StartTime = 0, StopTime = 10, Tolerance = 1e-06, Interval = 0.02)); //This line is there so simulation doesn't have to be set every time

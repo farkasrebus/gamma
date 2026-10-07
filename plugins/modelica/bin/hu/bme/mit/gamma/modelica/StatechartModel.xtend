@@ -146,36 +146,47 @@ import Modelica.StateGraph.InitialStep;
 import Modelica.StateGraph.Step;
 import Modelica.StateGraph.Transition;
 
-«FOR e : triggerEvents.values.toSet»
-Modelica.Blocks.Interfaces.BooleanInput «e.modelicaName»;
-«ENDFOR»
-«FOR e : raisedEvents.values.toSet»
-Modelica.Blocks.Interfaces.BooleanOutput «e.modelicaName»;
-«ENDFOR»
+  //implementing events as boolean impulses
+  «FOR e : triggerEvents.values.toSet»
+  Modelica.Blocks.Interfaces.BooleanInput «e.modelicaName»;
+  «ENDFOR»
+  //internal events for raised events
+  «FOR e : raisedEvents.values.toSet»
+  Modelica.Blocks.Interfaces.BooleanOutput «e.modelicaName»;
+  Boolean «e.modelicaName»Internal;
+  «ENDFOR»
+  
+  //The main entry is translated to an intital step
+  InitialStep «entries.get(model.regions.get(0)).name.toFirstLower»(nIn=0, nOut=1);
+  //Composite states instantiated
+  //Additional "_Entry" states join all incoming transitions
+  «FOR s:compositeStates.get(model.regions.get(0))»
+  «model.name»«s.name.toFirstUpper» «s.name.toFirstLower»;
+  Step «s.name.toFirstLower»Entry(nIn=«IF incoming.containsKey(s)»«incoming.get(s).size»«ELSE»0«ENDIF»,nOut=1);
+  Transition entryTo«s.name.toFirstUpper»(enableTimer=true, waitTime=0);
+  «ENDFOR»
+  //Instantiating regular not composite) states
+  «FOR s:normalStates.get(model.regions.get(0))»
+  Step «s.name.toFirstLower»(nIn=«IF incoming.containsKey(s)»«incoming.get(s).size»«ELSE»0«ENDIF»,nOut=«IF outgoing.containsKey(s)»«outgoing.get(s).size»«ELSE»0«ENDIF»);
+  «ENDFOR»
+  //Instatntiating transitions, depending on condition
+  «FOR t:transitions.get(model.regions.get(0))»
+  Transition «t.transitionName» «IF t.isDelayed»(enableTimer=true, waitTime=«t.getDelay»«ELSE»(condition=«triggerEvents.get(t).modelicaName»«ENDIF»);
+  «ENDFOR»
 
- InitialStep «entries.get(model.regions.get(0)).name.toFirstLower»(nIn=0, nOut=1);
- «FOR s:compositeStates.get(model.regions.get(0))»
- «model.name»«s.name.toFirstUpper» «s.name.toFirstLower»;
- Step «s.name.toFirstLower»Entry(nIn=«IF incoming.containsKey(s)»«incoming.get(s).size»«ELSE»0«ENDIF»,nOut=1);
- Transition entryTo«s.name.toFirstUpper»(enableTimer=true, waitTime=0);
- «ENDFOR»
- «FOR s:normalStates.get(model.regions.get(0))»
- Step «s.name.toFirstLower»(nIn=«IF incoming.containsKey(s)»«incoming.get(s).size»«ELSE»0«ENDIF»,nOut=«IF outgoing.containsKey(s)»«outgoing.get(s).size»«ELSE»0«ENDIF»);
- «ENDFOR»
- «FOR t:transitions.get(model.regions.get(0))»
- Transition «t.transitionName» «IF t.isDelayed»(enableTimer=true, waitTime=«t.getDelay»«ELSE»(condition=«triggerEvents.get(t).modelicaName»«ENDIF»);
- «ENDFOR»
-
- initial equation
- «FOR e : raisedEvents.values.toSet»
- «e.modelicaName»=false;
- «ENDFOR»
+  initial equation
+  «FOR e : raisedEvents.values.toSet»
+  «e.modelicaName»Internal=false;
+  «ENDFOR»
 
 equation
+  //Connecting the additional _Entry states to composite states
   «FOR s:compositeStates.get(model.regions.get(0))»
   connect(«s.name.toFirstLower»Entry.outPort[1],entryTo«s.name.toFirstUpper».inPort);
   connect(entryTo«s.name.toFirstUpper».outPort,«s.name.toFirstLower».inPort);
   «ENDFOR»
+  
+  //Connecting original transitions
   «FOR t:transitions.get(model.regions.get(0))»
   connect(«t.sourceState.name.toFirstLower».«IF 
   	t.sourceState.isComposite»suspend«ELSE»outPort«ENDIF»[«outgoing.get(t.sourceState).indexOf(t)+1»],«t.transitionName».inPort);
@@ -183,10 +194,28 @@ equation
   	t.targetState.isComposite»Entry«ENDIF».inPort[«incoming.get(t.targetState).indexOf(t)+1»]);
   «ENDFOR»
   
-«/*TODO: handle input/outputs between states AND raised events by transitions and entries*/»
+  //Connecting input variables to inputs for composite state classes
+  «FOR e : triggerEvents.values.toSet»
+  	«FOR s:compositeStates.get(model.regions.get(0))»
+  	connect(«e.modelicaName»,«s.name.toFirstLower».«e.modelicaName»);
+  	«ENDFOR»
+  «ENDFOR»
   
+  //Connecting outputs: high-levels raise events by transitions or from lower level states
+  «FOR e : raisedEvents.values.toSet»
+  «e.modelicaName»=«e.modelicaName»Internal«FOR s:compositeStates.get(model.regions.get(0))» or «s.name.toFirstLower».«e.modelicaName»«ENDFOR»;
+  «ENDFOR»
   
-
+  «/*TODO: All trans/states should be collected for the same event and all of them put in the same when*/»
+  //Raising high-level events
+  «FOR s:normalStates.get(model.regions.get(0))»
+  «IF raisedEvents.containsKey(s)»when «s.name.toFirstLower».active and not pre(«s.name.toFirstLower».active) then
+    «raisedEvents.get(s).modelicaName»Internal=true;
+  elsewhen pre(«raisedEvents.get(s).modelicaName») then
+    «raisedEvents.get(s).modelicaName»Internal=false;
+  end when;
+  «ENDIF»
+  «ENDFOR»
 end «model.name»;
 
 

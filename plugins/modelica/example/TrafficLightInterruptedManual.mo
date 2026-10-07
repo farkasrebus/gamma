@@ -3,6 +3,8 @@ class TrafficLightInterruptedManual
   import Modelica.StateGraph.Step;
   import Modelica.StateGraph.Transition;
   
+  Modelica.Blocks.Interfaces.BooleanOutput displayGreen;
+  
   Step blinkingYellow(nIn=2, nOut=1);
   Step black(nIn=1, nOut=1);
   
@@ -14,5 +16,7 @@ equation
   connect(t1.outPort,black.inPort[1]);
   connect(black.outPort[1],t2.inPort);
   connect(t2.outPort,blinkingYellow.inPort[2]);
+  
+  displayGreen=false;
   
 end TrafficLightInterruptedManual;
