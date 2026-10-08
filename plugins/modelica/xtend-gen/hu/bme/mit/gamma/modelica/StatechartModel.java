@@ -552,6 +552,369 @@ public class StatechartModel {
     _builder.append(";");
     _builder.newLineIfNotEmpty();
     _builder.newLine();
+    {
+      Set<Set<State>> _set_5 = IterableExtensions.<Set<State>>toSet(this.compositeStates.values());
+      for(final Set<State> cs : _set_5) {
+        {
+          for(final State state : cs) {
+            _builder.append("class ");
+            String _name_3 = this.model.getName();
+            _builder.append(_name_3);
+            String _firstUpper_4 = StringExtensions.toFirstUpper(state.getName());
+            _builder.append(_firstUpper_4);
+            _builder.newLineIfNotEmpty();
+            _builder.append("  ");
+            _builder.append("extends Modelica.StateGraph.PartialCompositeStep;");
+            _builder.newLine();
+            _builder.append("  ");
+            _builder.append("import Modelica.StateGraph.Step;");
+            _builder.newLine();
+            _builder.append("  ");
+            _builder.append("import Modelica.StateGraph.Transition;");
+            _builder.newLine();
+            _builder.append("  ");
+            _builder.newLine();
+            {
+              Set<String> _set_6 = IterableExtensions.<String>toSet(this.triggerEvents.values());
+              for(final String e_5 : _set_6) {
+                _builder.append("  ");
+                _builder.append("Modelica.Blocks.Interfaces.BooleanInput ");
+                String _modelicaName_13 = this.getModelicaName(e_5);
+                _builder.append(_modelicaName_13, "  ");
+                _builder.append(";");
+                _builder.newLineIfNotEmpty();
+              }
+            }
+            {
+              Set<String> _set_7 = IterableExtensions.<String>toSet(this.raisedEvents.values());
+              for(final String e_6 : _set_7) {
+                _builder.append("  ");
+                _builder.append("Modelica.Blocks.Interfaces.BooleanOutput ");
+                String _modelicaName_14 = this.getModelicaName(e_6);
+                _builder.append(_modelicaName_14, "  ");
+                _builder.append(";");
+                _builder.newLineIfNotEmpty();
+                _builder.append("  ");
+                _builder.append("Boolean ");
+                String _modelicaName_15 = this.getModelicaName(e_6);
+                _builder.append(_modelicaName_15, "  ");
+                _builder.append("Internal;");
+                _builder.newLineIfNotEmpty();
+              }
+            }
+            _builder.append("  ");
+            _builder.newLine();
+            {
+              Set<State> _get_8 = this.compositeStates.get(state.getRegions().get(0));
+              for(final State s_6 : _get_8) {
+                _builder.append("  ");
+                String _name_4 = this.model.getName();
+                _builder.append(_name_4, "  ");
+                String _firstUpper_5 = StringExtensions.toFirstUpper(s_6.getName());
+                _builder.append(_firstUpper_5, "  ");
+                _builder.append(" ");
+                String _firstLower_12 = StringExtensions.toFirstLower(s_6.getName());
+                _builder.append(_firstLower_12, "  ");
+                _builder.append(";");
+                _builder.newLineIfNotEmpty();
+                _builder.append("  ");
+                _builder.append("Step ");
+                String _firstLower_13 = StringExtensions.toFirstLower(s_6.getName());
+                _builder.append(_firstLower_13, "  ");
+                _builder.append("Entry(nIn=");
+                {
+                  boolean _containsKey_4 = this.incoming.containsKey(s_6);
+                  if (_containsKey_4) {
+                    int _size_3 = this.incoming.get(s_6).size();
+                    _builder.append(_size_3, "  ");
+                  } else {
+                    _builder.append("0");
+                  }
+                }
+                _builder.append(",nOut=1);");
+                _builder.newLineIfNotEmpty();
+                _builder.append("  ");
+                _builder.append("Transition entryTo");
+                String _firstUpper_6 = StringExtensions.toFirstUpper(s_6.getName());
+                _builder.append(_firstUpper_6, "  ");
+                _builder.append("(enableTimer=true, waitTime=0);");
+                _builder.newLineIfNotEmpty();
+              }
+            }
+            {
+              Set<State> _get_9 = this.normalStates.get(state.getRegions().get(0));
+              for(final State s_7 : _get_9) {
+                _builder.append("  ");
+                _builder.append("Step ");
+                String _firstLower_14 = StringExtensions.toFirstLower(s_7.getName());
+                _builder.append(_firstLower_14, "  ");
+                _builder.append("(nIn=");
+                {
+                  boolean _containsKey_5 = this.incoming.containsKey(s_7);
+                  if (_containsKey_5) {
+                    int _size_4 = this.incoming.get(s_7).size();
+                    _builder.append(_size_4, "  ");
+                  } else {
+                    _builder.append("0");
+                  }
+                }
+                _builder.append(",nOut=");
+                {
+                  boolean _containsKey_6 = this.outgoing.containsKey(s_7);
+                  if (_containsKey_6) {
+                    int _size_5 = this.outgoing.get(s_7).size();
+                    _builder.append(_size_5, "  ");
+                  } else {
+                    _builder.append("0");
+                  }
+                }
+                _builder.append(");");
+                _builder.newLineIfNotEmpty();
+              }
+            }
+            _builder.append("  ");
+            _builder.newLine();
+            {
+              Set<Transition> _get_10 = this.transitions.get(state.getRegions().get(0));
+              for(final Transition t_2 : _get_10) {
+                {
+                  StateNode _sourceState = t_2.getSourceState();
+                  boolean _not = (!(_sourceState instanceof EntryState));
+                  if (_not) {
+                    _builder.append("  ");
+                    _builder.append("Transition ");
+                    String _transitionName_3 = this.getTransitionName(t_2);
+                    _builder.append(_transitionName_3, "  ");
+                    _builder.append(" ");
+                    {
+                      boolean _isDelayed_1 = this.isDelayed(t_2);
+                      if (_isDelayed_1) {
+                        _builder.append("(enableTimer=true, waitTime=");
+                        int _delay_1 = this.getDelay(t_2);
+                        _builder.append(_delay_1, "  ");
+                      } else {
+                        _builder.append("(condition=");
+                        String _modelicaName_16 = this.getModelicaName(this.triggerEvents.get(t_2));
+                        _builder.append(_modelicaName_16, "  ");
+                      }
+                    }
+                    _builder.append(");");
+                    _builder.newLineIfNotEmpty();
+                  }
+                }
+              }
+            }
+            _builder.append("  ");
+            _builder.newLine();
+            _builder.append("initial equation");
+            _builder.newLine();
+            {
+              Set<String> _set_8 = IterableExtensions.<String>toSet(this.raisedEvents.values());
+              for(final String e_7 : _set_8) {
+                _builder.append("  ");
+                String _modelicaName_17 = this.getModelicaName(e_7);
+                _builder.append(_modelicaName_17, "  ");
+                _builder.append("Internal=false;");
+                _builder.newLineIfNotEmpty();
+              }
+            }
+            _builder.newLine();
+            _builder.append("equation");
+            _builder.newLine();
+            {
+              Set<Transition> _get_11 = this.transitions.get(state.getRegions().get(0));
+              for(final Transition t_3 : _get_11) {
+                {
+                  StateNode _sourceState_1 = t_3.getSourceState();
+                  if ((_sourceState_1 instanceof EntryState)) {
+                    _builder.append("  ");
+                    _builder.append("connect(");
+                    String _name_5 = t_3.getTargetState().getName();
+                    _builder.append(_name_5, "  ");
+                    _builder.append(".inPort[");
+                    int _indexOf_2 = this.incoming.get(t_3.getTargetState()).indexOf(t_3);
+                    int _plus_2 = (_indexOf_2 + 1);
+                    _builder.append(_plus_2, "  ");
+                    _builder.append("],inPort); //Entry state mapped to direct entry");
+                    _builder.newLineIfNotEmpty();
+                  } else {
+                    _builder.append("  ");
+                    _builder.append("connect(");
+                    String _firstLower_15 = StringExtensions.toFirstLower(t_3.getSourceState().getName());
+                    _builder.append(_firstLower_15, "  ");
+                    _builder.append(".");
+                    {
+                      boolean _isComposite_2 = this.isComposite(t_3.getSourceState());
+                      if (_isComposite_2) {
+                        _builder.append("suspend");
+                      } else {
+                        _builder.append("outPort");
+                      }
+                    }
+                    _builder.append("[");
+                    int _indexOf_3 = this.outgoing.get(t_3.getSourceState()).indexOf(t_3);
+                    int _plus_3 = (_indexOf_3 + 1);
+                    _builder.append(_plus_3, "  ");
+                    _builder.append("],");
+                    String _transitionName_4 = this.getTransitionName(t_3);
+                    _builder.append(_transitionName_4, "  ");
+                    _builder.append(".inPort);");
+                    _builder.newLineIfNotEmpty();
+                    _builder.append("  ");
+                    _builder.append("connect(");
+                    String _transitionName_5 = this.getTransitionName(t_3);
+                    _builder.append(_transitionName_5, "  ");
+                    _builder.append(".outPort,");
+                    String _firstLower_16 = StringExtensions.toFirstLower(t_3.getTargetState().getName());
+                    _builder.append(_firstLower_16, "  ");
+                    {
+                      boolean _isComposite_3 = this.isComposite(t_3.getTargetState());
+                      if (_isComposite_3) {
+                        _builder.append("Entry");
+                      }
+                    }
+                    _builder.append(".inPort[");
+                    int _indexOf_4 = this.incoming.get(t_3.getTargetState()).indexOf(t_3);
+                    int _plus_4 = (_indexOf_4 + 1);
+                    _builder.append(_plus_4, "  ");
+                    _builder.append("]);");
+                    _builder.newLineIfNotEmpty();
+                  }
+                }
+              }
+            }
+            _builder.append("  ");
+            _builder.newLine();
+            {
+              Set<State> _get_12 = this.compositeStates.get(state.getRegions().get(0));
+              for(final State s_8 : _get_12) {
+                _builder.append("  ");
+                _builder.append("connect(");
+                String _firstLower_17 = StringExtensions.toFirstLower(s_8.getName());
+                _builder.append(_firstLower_17, "  ");
+                _builder.append("Entry.outPort[1],entryTo");
+                String _firstUpper_7 = StringExtensions.toFirstUpper(s_8.getName());
+                _builder.append(_firstUpper_7, "  ");
+                _builder.append(".inPort);");
+                _builder.newLineIfNotEmpty();
+                _builder.append("  ");
+                _builder.append("connect(entryTo");
+                String _firstUpper_8 = StringExtensions.toFirstUpper(s_8.getName());
+                _builder.append(_firstUpper_8, "  ");
+                _builder.append(".outPort,");
+                String _firstLower_18 = StringExtensions.toFirstLower(s_8.getName());
+                _builder.append(_firstLower_18, "  ");
+                _builder.append(".inPort);");
+                _builder.newLineIfNotEmpty();
+              }
+            }
+            _builder.append("  ");
+            _builder.newLine();
+            {
+              Set<String> _set_9 = IterableExtensions.<String>toSet(this.triggerEvents.values());
+              for(final String e_8 : _set_9) {
+                {
+                  Set<State> _get_13 = this.compositeStates.get(state.getRegions().get(0));
+                  for(final State s_9 : _get_13) {
+                    _builder.append("  ");
+                    _builder.append("connect(");
+                    String _modelicaName_18 = this.getModelicaName(e_8);
+                    _builder.append(_modelicaName_18, "  ");
+                    _builder.append(",");
+                    String _firstLower_19 = StringExtensions.toFirstLower(s_9.getName());
+                    _builder.append(_firstLower_19, "  ");
+                    _builder.append(".");
+                    String _modelicaName_19 = this.getModelicaName(e_8);
+                    _builder.append(_modelicaName_19, "  ");
+                    _builder.append(");");
+                    _builder.newLineIfNotEmpty();
+                  }
+                }
+              }
+            }
+            _builder.append("    ");
+            _builder.newLine();
+            {
+              Set<String> _set_10 = IterableExtensions.<String>toSet(this.raisedEvents.values());
+              for(final String e_9 : _set_10) {
+                _builder.append("  ");
+                String _modelicaName_20 = this.getModelicaName(e_9);
+                _builder.append(_modelicaName_20, "  ");
+                _builder.append("=");
+                String _modelicaName_21 = this.getModelicaName(e_9);
+                _builder.append(_modelicaName_21, "  ");
+                _builder.append("Internal");
+                {
+                  Set<State> _get_14 = this.compositeStates.get(state.getRegions().get(0));
+                  for(final State s_10 : _get_14) {
+                    _builder.append(" or ");
+                    String _firstLower_20 = StringExtensions.toFirstLower(s_10.getName());
+                    _builder.append(_firstLower_20, "  ");
+                    _builder.append(".");
+                    String _modelicaName_22 = this.getModelicaName(e_9);
+                    _builder.append(_modelicaName_22, "  ");
+                  }
+                }
+                _builder.append(";");
+                _builder.newLineIfNotEmpty();
+              }
+            }
+            _builder.append("    ");
+            _builder.newLine();
+            _builder.append("  ");
+            _builder.newLine();
+            {
+              Set<State> _get_15 = this.normalStates.get(state.getRegions().get(0));
+              for(final State s_11 : _get_15) {
+                _builder.append("  ");
+                {
+                  boolean _containsKey_7 = this.raisedEvents.containsKey(s_11);
+                  if (_containsKey_7) {
+                    _builder.append("when ");
+                    String _firstLower_21 = StringExtensions.toFirstLower(s_11.getName());
+                    _builder.append(_firstLower_21, "  ");
+                    _builder.append(".active and not pre(");
+                    String _firstLower_22 = StringExtensions.toFirstLower(s_11.getName());
+                    _builder.append(_firstLower_22, "  ");
+                    _builder.append(".active) then");
+                    _builder.newLineIfNotEmpty();
+                    _builder.append("  ");
+                    _builder.append("  ");
+                    String _modelicaName_23 = this.getModelicaName(this.raisedEvents.get(s_11));
+                    _builder.append(_modelicaName_23, "    ");
+                    _builder.append("Internal=true;");
+                    _builder.newLineIfNotEmpty();
+                    _builder.append("  ");
+                    _builder.append("elsewhen pre(");
+                    String _modelicaName_24 = this.getModelicaName(this.raisedEvents.get(s_11));
+                    _builder.append(_modelicaName_24, "  ");
+                    _builder.append(") then");
+                    _builder.newLineIfNotEmpty();
+                    _builder.append("  ");
+                    _builder.append("  ");
+                    String _modelicaName_25 = this.getModelicaName(this.raisedEvents.get(s_11));
+                    _builder.append(_modelicaName_25, "    ");
+                    _builder.append("Internal=false;");
+                    _builder.newLineIfNotEmpty();
+                    _builder.append("  ");
+                    _builder.append("end when;");
+                    _builder.newLine();
+                  }
+                }
+              }
+            }
+            _builder.append("  ");
+            _builder.newLine();
+            _builder.append("end ");
+            String _name_6 = state.getName();
+            _builder.append(_name_6);
+            _builder.append(";");
+            _builder.newLineIfNotEmpty();
+            _builder.newLine();
+          }
+        }
+      }
+    }
     _builder.newLine();
     _builder.newLine();
     _builder.newLine();

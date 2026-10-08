@@ -46,7 +46,6 @@ public class Main {
     } else {
       InputOutput.<String>println("Unexpected root. Expected type: Package");
     }
-    Main.printTree(root, "");
   }
 
   /**

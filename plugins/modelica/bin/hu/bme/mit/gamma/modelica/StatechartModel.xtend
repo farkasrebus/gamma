@@ -218,8 +218,84 @@ equation
   «ENDFOR»
 end «model.name»;
 
+«FOR cs:compositeStates.values.toSet»
+«FOR state:cs»
+class «model.name»«state.name.toFirstUpper»
+  extends Modelica.StateGraph.PartialCompositeStep;
+  import Modelica.StateGraph.Step;
+  import Modelica.StateGraph.Transition;
+  
+  «FOR e : triggerEvents.values.toSet»
+  Modelica.Blocks.Interfaces.BooleanInput «e.modelicaName»;
+  «ENDFOR»
+  «FOR e : raisedEvents.values.toSet»
+  Modelica.Blocks.Interfaces.BooleanOutput «e.modelicaName»;
+  Boolean «e.modelicaName»Internal;
+  «ENDFOR»
+  
+  «FOR s:compositeStates.get(state.regions.get(0))»
+  «model.name»«s.name.toFirstUpper» «s.name.toFirstLower»;
+  Step «s.name.toFirstLower»Entry(nIn=«IF incoming.containsKey(s)»«incoming.get(s).size»«ELSE»0«ENDIF»,nOut=1);
+  Transition entryTo«s.name.toFirstUpper»(enableTimer=true, waitTime=0);
+  «ENDFOR»
+  «FOR s:normalStates.get(state.regions.get(0))»
+  Step «s.name.toFirstLower»(nIn=«IF incoming.containsKey(s)»«incoming.get(s).size»«ELSE»0«ENDIF»,nOut=«IF outgoing.containsKey(s)»«outgoing.get(s).size»«ELSE»0«ENDIF»);
+  «ENDFOR»
+  
+  «FOR t:transitions.get(state.regions.get(0))»
+  «IF !(t.sourceState instanceof EntryState)»«/*Transitions from entry do not get instantiated*/»
+  Transition «t.transitionName» «IF t.isDelayed»(enableTimer=true, waitTime=«t.getDelay»«ELSE»(condition=«triggerEvents.get(t).modelicaName»«ENDIF»);
+  «ENDIF»
+  «ENDFOR»
+  
+initial equation
+  «FOR e : raisedEvents.values.toSet»
+  «e.modelicaName»Internal=false;
+  «ENDFOR»
 
-«/*TODO: create classes for composite states*/»
+equation
+  «FOR t:transitions.get(state.regions.get(0))»
+  «IF t.sourceState instanceof EntryState»
+  connect(«t.targetState.name».inPort[«incoming.get(t.targetState).indexOf(t)+1»],inPort); //Entry state mapped to direct entry
+  «ELSE»
+  connect(«t.sourceState.name.toFirstLower».«IF 
+    	t.sourceState.isComposite»suspend«ELSE»outPort«ENDIF»[«outgoing.get(t.sourceState).indexOf(t)+1»],«t.transitionName».inPort);
+  connect(«t.transitionName».outPort,«t.targetState.name.toFirstLower»«IF 
+    	t.targetState.isComposite»Entry«ENDIF».inPort[«incoming.get(t.targetState).indexOf(t)+1»]);
+  «ENDIF»
+  «ENDFOR»
+  
+  «FOR s:compositeStates.get(state.regions.get(0))»
+  connect(«s.name.toFirstLower»Entry.outPort[1],entryTo«s.name.toFirstUpper».inPort);
+  connect(entryTo«s.name.toFirstUpper».outPort,«s.name.toFirstLower».inPort);
+  «ENDFOR»
+  
+  «FOR e : triggerEvents.values.toSet»
+  	«FOR s:compositeStates.get(state.regions.get(0))»
+  	connect(«e.modelicaName»,«s.name.toFirstLower».«e.modelicaName»);
+   	«ENDFOR»
+  «ENDFOR»
+    
+  «FOR e : raisedEvents.values.toSet»
+  «e.modelicaName»=«e.modelicaName»Internal«FOR s:compositeStates.get(state.regions.get(0))» or «s.name.toFirstLower».«e.modelicaName»«ENDFOR»;
+  «ENDFOR»
+    
+  «/*TODO: All trans/states should be collected for the same event and all of them put in the same when*/»
+  «FOR s:normalStates.get(state.regions.get(0))»
+  «IF raisedEvents.containsKey(s)»when «s.name.toFirstLower».active and not pre(«s.name.toFirstLower».active) then
+    «raisedEvents.get(s).modelicaName»Internal=true;
+  elsewhen pre(«raisedEvents.get(s).modelicaName») then
+    «raisedEvents.get(s).modelicaName»Internal=false;
+  end when;
+  «ENDIF»
+  «ENDFOR»
+  
+end «state.name»;
+
+«ENDFOR»
+«ENDFOR»
+
+«/*TODO: ADD timers for timeouts!!!!*/»
 
 end «packageName»;
 '''

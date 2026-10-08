@@ -72,7 +72,7 @@ class Main {
 			
 		} else println("Unexpected root. Expected type: Package")
 		
-		printTree(root,"")
+		//printTree(root,"")
 	}
 	
 	/*def static isRequired(Port p) {
